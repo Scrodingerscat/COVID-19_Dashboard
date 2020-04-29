@@ -1,33 +1,35 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import time
 import pandas as pd
-import os
 import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
 from newsapi import NewsApiClient
 import json
-import config
+import apiconfig
 
 # ====================
 # Set path
 # ====================
 cwdpath = os.getcwd()
-# foldername='Sourse_Data'
-# filename=os.listdir(foldername)[-1]
-# covid=pd.read_csv(os.path.join(cwdpath,foldername,filename))
-filename = "canada.json"
-jsonpath = os.path.join(cwdpath, filename)
+jsonfolder = "docs"
+jsonfile = "canada.json"
+jsonpath = os.path.join(cwdpath, jsonfolder, jsonfile)
 
 # ====================
 # Data prepare
 # ====================
 # Region name list
-conn = sqlite3.connect("COVID19.db", check_same_thread=False)
+dbfolder = "data"
+dbfile = "COVID19.db"
+dbpath = os.path.join(cwdpath, dbfolder, dbfile)
+conn = sqlite3.connect(dbpath, check_same_thread=False)
 prlist = pd.read_sql_query(
     """SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;""", con=conn,
 )
@@ -73,7 +75,7 @@ testcolor = "#238b45"
 # Province graph
 def prgraph():
     df = pd.DataFrame()
-    conn = sqlite3.connect("COVID19.db", check_same_thread=False)
+    conn = sqlite3.connect(dbpath, check_same_thread=False)
 
     for i in prlist:
         qurey = """SELECT prname, numtotal FROM '{}' WHERE date=(SELECT max(date) FROM '{}')""".format(
@@ -117,7 +119,7 @@ def prgraph():
 
 # Tabs graph
 def tabsgraph(mode, region):
-    conn = sqlite3.connect("COVID19.db", check_same_thread=False)
+    conn = sqlite3.connect(dbpath, check_same_thread=False)
     qurey = '''SELECT date, {} FROM "{}"'''.format(mode, region)
     df = pd.read_sql_query(qurey, con=conn)
     conn.close()
@@ -168,7 +170,7 @@ def mapfig():
     with open(jsonpath, "r") as response:
         geojson = json.load(response)
 
-    conn = sqlite3.connect("COVID19.db", check_same_thread=False)
+    conn = sqlite3.connect(dbpath, check_same_thread=False)
     query = '''SELECT * FROM "covid"'''
     df = pd.read_sql(query, con=conn)
     conn.close()
@@ -478,7 +480,7 @@ def hour_update(n):
 # News update
 @app.callback(Output("news", "children"), [Input("hourupdate", "n_intervals")])
 def news_update(n):
-    newsapi = NewsApiClient(api_key=config.newsapi)
+    newsapi = NewsApiClient(api_key=apiconfig.newsapi)
     top_headlines = newsapi.get_top_headlines(
         q="covid-19", language="en", country="ca", page_size=10
     )

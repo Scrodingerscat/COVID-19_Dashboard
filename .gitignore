@@ -50,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+test/
 
 # Translations
 *.mo
@@ -125,5 +126,4 @@ dmypy.json
 .pyre/
 
 # Keys and secret
-config.py
-*.pyc
+*config.py
