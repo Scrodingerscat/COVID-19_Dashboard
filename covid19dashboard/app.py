@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -17,27 +16,33 @@ import apiconfig
 # ====================
 # Set path
 # ====================
-cwdpath = os.getcwd()
+currentpath = os.path.abspath(os.path.dirname(__file__))
 jsonfolder = "docs"
 jsonfile = "canada.json"
-jsonpath = os.path.join(cwdpath, jsonfolder, jsonfile)
+jsonpath = os.path.abspath(os.path.join(currentpath, "..", jsonfolder, jsonfile))
 
 # ====================
 # Data prepare
 # ====================
-# Region name list
+# Get data from the database
 dbfolder = "data"
 dbfile = "COVID19.db"
-dbpath = os.path.join(cwdpath, dbfolder, dbfile)
-conn = sqlite3.connect(dbpath, check_same_thread=False)
-prlist = pd.read_sql_query(
-    """SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;""", con=conn,
-)
-conn.close
+dbpath = os.path.abspath(os.path.join(currentpath, "..", dbfolder, dbfile))
 
-prlist = prlist.drop(
-    prlist[(prlist.name == "covid") | (prlist.name == "Repatriated travellers")].index
-).name
+
+def get_data(query):
+    conn = sqlite3.connect(dbpath, check_same_thread=False)
+    df = pd.read_sql(query, con=conn)
+    conn.close()
+    if "date" in df.columns:
+        df.date = pd.to_datetime(df.date, format="%d-%m-%Y")
+
+    return df
+
+
+# Province list and shrtname dictionary
+query = """SELECT DISTINCT prname FROM 'covid' WHERE pruid!=1 AND pruid!=99;"""
+prdf = get_data(query).prname
 
 dicprlist = {
     "Newfoundland and Labrador": "NL",
@@ -72,23 +77,18 @@ deathcolor = "#fb6a4a"
 confcolor = "#2171b5"
 testcolor = "#238b45"
 
-# Province graph
+# Cases by province graph
 def prgraph():
-    df = pd.DataFrame()
-    conn = sqlite3.connect(dbpath, check_same_thread=False)
-
-    for i in prlist:
-        qurey = """SELECT prname, numtotal FROM '{}' WHERE date=(SELECT max(date) FROM '{}')""".format(
-            i, i
-        )
-        df = pd.concat([df, pd.read_sql(qurey, con=conn)], axis=0)
-
-    conn.close()
+    query = """SELECT prname, date, numtotal FROM 'covid';"""
+    df = get_data(query)
+    df = df.drop_duplicates("prname", keep="last")[
+        (df.prname != "Repatriated travellers") & (df.prname != "Canada")
+    ]
     df = df.sort_values(by=["numtotal"], ascending=False)
+
     x = []
     for i in df.prname:
-        if i != "Canada":
-            x.append(dicprlist[i])
+        x.append(dicprlist[i])
 
     fig = dict(
         {
@@ -119,11 +119,7 @@ def prgraph():
 
 # Tabs graph
 def tabsgraph(mode, region):
-    conn = sqlite3.connect(dbpath, check_same_thread=False)
-    qurey = '''SELECT date, {} FROM "{}"'''.format(mode, region)
-    df = pd.read_sql_query(qurey, con=conn)
-    conn.close()
-
+    # Conditions
     if mode == "newtotal":
         gtype = "bar"
         text = "New Reported Cases in " + region
@@ -149,6 +145,20 @@ def tabsgraph(mode, region):
         text = "Total Tested number in " + region
         color = testcolor
 
+    # Prepare data
+    query = """SELECT date, numtotal, numdeaths, numtested FROM 'covid' WHERE prname='{}';""".format(
+        region
+    )
+    df1 = get_data(query)
+    df2 = (
+        df1[["numtotal", "numdeaths", "numtested"]]
+        .diff()
+        .rename(
+            columns={"numdeaths": "newdeaths", "numtotal": "newtotal", "numtested": "newtested"}
+        )
+    )
+    df = pd.concat([df1, df2], axis=1)
+
     # Create fig
     fig = dict(
         {
@@ -170,18 +180,12 @@ def mapfig():
     with open(jsonpath, "r") as response:
         geojson = json.load(response)
 
-    conn = sqlite3.connect(dbpath, check_same_thread=False)
-    query = '''SELECT * FROM "covid"'''
-    df = pd.read_sql(query, con=conn)
-    conn.close()
-
-    df["date"] = pd.to_datetime(df["date"])
-    df["year"] = df["date"].dt.year
-    df["month"] = df["date"].dt.month
-    dfcolor = df[["prname", "numtotal", "month", "year"]][(df.pruid != 1) & (df.pruid != 99)]
+    query = """SELECT prname, numtotal FROM 'covid' WHERE pruid!=1 AND pruid!=99;"""
+    df = get_data(query)
+    df = df.drop_duplicates("prname", keep="last")
 
     fig = px.choropleth_mapbox(
-        dfcolor,
+        df,
         geojson=geojson,
         color="numtotal",
         locations="prname",
@@ -269,7 +273,7 @@ app.layout = html.Div(
                                 html.P("Select Region", className="control_label"),
                                 dcc.Dropdown(
                                     id="dropdown",
-                                    options=[{"label": i, "value": i} for i in prlist],
+                                    options=[{"label": i, "value": i} for i in prdf],
                                     value="Canada",
                                     clearable=False,
                                 ),
@@ -339,8 +343,11 @@ app.layout = html.Div(
                 html.Div(
                     [
                         dcc.Graph(id="mapgraph", className="pretty_container"),
-                        dcc.Interval(id="hourupdate", interval=1000 * 1 * 60 * 60, n_intervals=0),
+                        dcc.Interval(
+                            id="dailyupdate", interval=1000 * 1 * 60 * 60 * 6, n_intervals=0
+                        ),
                         html.Div(id="news", className="pretty_container",),
+                        dcc.Interval(id="hourlyupdate", interval=1000 * 1 * 60 * 60, n_intervals=0),
                     ],
                     className="seven columns",
                 ),
@@ -428,9 +435,9 @@ def date_update(n):
         Output("dailytested", "figure"),
         Output("cumutested", "figure"),
     ],
-    [Input("dropdown", "value")],
+    [Input("dropdown", "value"), Input("dailyupdate", "n_intervals")],
 )
-def tabs_update(region):
+def tabs_update(region, n):
     return (
         tabsgraph("newtotal", region),
         tabsgraph("numtotal", region),
@@ -451,34 +458,44 @@ def tabs_update(region):
         Output("numdeaths", "children"),
         Output("numtested", "children"),
     ],
-    [Input("dropdown", "value")],
+    [Input("dropdown", "value"), Input("dailyupdate", "n_intervals")],
 )
-def info_update(region):
-    qurey = """SELECT newtotal, newdeaths, newtested, numtotal, numdeaths, numtested FROM '{}' WHERE date=(SELECT max(date) FROM '{}')""".format(
-        region, region
+def info_update(region, n):
+    query = """SELECT date, numtotal, numdeaths, numtested FROM 'covid' WHERE prname='{}';""".format(
+        region
     )
-    df = pd.read_sql_query(qurey, con=conn)
+    df1 = get_data(query)
+    df2 = (
+        df1[["numtotal", "numdeaths", "numtested"]]
+        .diff()
+        .rename(
+            columns={"numdeaths": "newdeaths", "numtotal": "newtotal", "numtested": "newtested"}
+        )
+    )
+    df = pd.concat([df1, df2], axis=1)
+    df = df[df.date == max(df.date)]
+
     return (
-        df.at[0, "newtotal"],
-        df.at[0, "newdeaths"],
-        df.at[0, "newtested"],
-        df.at[0, "numtotal"],
-        df.at[0, "numdeaths"],
-        df.at[0, "numtested"],
+        df.newtotal,
+        df.newdeaths,
+        df.newtested,
+        df.numtotal,
+        df.numdeaths,
+        df.numtested,
     )
 
 
 # Map and prgraph hour update
 @app.callback(
     [Output("mapgraph", "figure"), Output("prgraph", "figure")],
-    [Input("hourupdate", "n_intervals")],
+    [Input("dailyupdate", "n_intervals")],
 )
-def hour_update(n):
+def daily_update(n):
     return (mapfig(), prgraph())
 
 
 # News update
-@app.callback(Output("news", "children"), [Input("hourupdate", "n_intervals")])
+@app.callback(Output("news", "children"), [Input("hourlyupdate", "n_intervals")])
 def news_update(n):
     newsapi = NewsApiClient(api_key=apiconfig.newsapi)
     top_headlines = newsapi.get_top_headlines(

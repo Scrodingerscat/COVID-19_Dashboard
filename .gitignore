@@ -127,3 +127,6 @@ dmypy.json
 
 # Keys and secret
 *config.py
+
+# vscode
+.vscode

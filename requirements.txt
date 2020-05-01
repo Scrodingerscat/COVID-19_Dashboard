@@ -1,0 +1,7 @@
+dash_core_components==1.9.1
+newsapi_python==0.2.6
+dash_html_components==1.0.3
+dash==1.11.0
+pandas==1.0.3
+plotly==4.6.0
+newsapi==0.1.1
