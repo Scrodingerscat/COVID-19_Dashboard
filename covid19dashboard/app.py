@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from newsapi import NewsApiClient
 import json
-import apiconfig
+from dotenv import load_dotenv
 
 # ====================
 # Set path
@@ -497,7 +497,9 @@ def daily_update(n):
 # News update
 @app.callback(Output("news", "children"), [Input("hourlyupdate", "n_intervals")])
 def news_update(n):
-    newsapi = NewsApiClient(api_key=apiconfig.newsapi)
+    load_dotenv()
+    api_key = os.environ.get("NEWS_API_KEY")
+    newsapi = NewsApiClient(api_key=api_key)
     top_headlines = newsapi.get_top_headlines(
         q="covid-19", language="en", country="ca", page_size=10
     )
