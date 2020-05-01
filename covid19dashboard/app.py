@@ -9,8 +9,6 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
-
-# from newsapi import NewsApiClient
 from newsapi.newsapi_client import NewsApiClient
 import json
 from dotenv import load_dotenv
@@ -47,7 +45,7 @@ def get_data(query):
 
 
 # Province list and shrtname dictionary
-query = """SELECT DISTINCT prname FROM 'covid' WHERE pruid!=1 AND pruid!=99;"""
+query = """SELECT DISTINCT prname FROM 'covid' WHERE pruid!=99;"""
 prdf = get_data(query).prname
 
 dicprlist = {
