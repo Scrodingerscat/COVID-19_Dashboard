@@ -14,6 +14,10 @@ import plotly.graph_objects as go
 import json
 from dotenv import load_dotenv
 
+# app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
+app = dash.Dash(__name__)
+server = app.server
+
 # ====================
 # Set path
 # ====================
@@ -206,11 +210,6 @@ def mapfig():
 # ====================
 # Html layout
 # ====================
-# app start
-# app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
-app = dash.Dash(__name__)
-# server = app.server
-
 # Layout build
 app.layout = html.Div(
     children=[
