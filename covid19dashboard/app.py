@@ -9,7 +9,8 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
-from newsapi import NewsApiClient
+
+# from newsapi import NewsApiClient
 import json
 from dotenv import load_dotenv
 
@@ -495,19 +496,19 @@ def daily_update(n):
 
 
 # News update
-@app.callback(Output("news", "children"), [Input("hourlyupdate", "n_intervals")])
-def news_update(n):
-    load_dotenv()
-    api_key = os.environ.get("NEWS_API_KEY")
-    newsapi = NewsApiClient(api_key=api_key)
-    top_headlines = newsapi.get_top_headlines(
-        q="covid-19", language="en", country="ca", page_size=10
-    )
-    article = top_headlines["articles"]
-    news = [html.H5("News about Covid-19 in Canada")] + [
-        html.H6(html.A(i["title"], href=i["url"], target="_blank")) for i in article
-    ]
-    return news
+# @app.callback(Output("news", "children"), [Input("hourlyupdate", "n_intervals")])
+# def news_update(n):
+#     load_dotenv()
+#     api_key = os.environ.get("NEWS_API_KEY")
+#     newsapi = NewsApiClient(api_key=api_key)
+#     top_headlines = newsapi.get_top_headlines(
+#         q="covid-19", language="en", country="ca", page_size=10
+#     )
+#     article = top_headlines["articles"]
+#     news = [html.H5("News about Covid-19 in Canada")] + [
+#         html.H6(html.A(i["title"], href=i["url"], target="_blank")) for i in article
+#     ]
+#     return news
 
 
 if __name__ == "__main__":
