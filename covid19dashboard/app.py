@@ -9,7 +9,9 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
-from newsapi import NewsApiClient
+
+# from newsapi import NewsApiClient
+from newsapi.newsapi_client import NewsApiClient
 import json
 from dotenv import load_dotenv
 
