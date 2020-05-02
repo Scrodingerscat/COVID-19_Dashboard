@@ -7,3 +7,4 @@ newsapi_python==0.2.6
 dash_core_components==1.9.1
 newsapi==0.1.1
 python-dotenv==0.13.0
+gunicorn==20.0.4
