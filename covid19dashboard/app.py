@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 from newsapi.newsapi_client import NewsApiClient
 import json
 from dotenv import load_dotenv
+import dbupdate
 
 # app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 app = dash.Dash(__name__)
@@ -109,7 +110,7 @@ def prgraph():
                 "margin": {"r": 30, "t": 30, "l": 30, "b": 30},
                 "plot_bgcolor": bgcolor,
                 "paper_bgcolor": bgcolor,
-                "height": 344,
+                # "height": 344,
                 "yaxis": {"showgrid": False},
                 "title": {"text": "Total Cases by Province and Territory"},
             },
@@ -271,7 +272,7 @@ app.layout = html.Div(
                             className="pretty_container",
                             id="cross-filter-options",
                             children=[
-                                html.P("Select Region", className="control_label"),
+                                html.H6("Select Region", className="control_label"),
                                 dcc.Dropdown(
                                     id="dropdown",
                                     options=[{"label": i, "value": i} for i in prdf],
@@ -280,6 +281,22 @@ app.layout = html.Div(
                                 ),
                                 # html.P("Select Date", className="control_label"),
                                 # calendar,
+                            ],
+                        ),
+                        # Last update Time
+                        html.Div(
+                            className="row flex-display",
+                            children=[
+                                html.Div(
+                                    [html.H5(id="lastupdate")],
+                                    className="mini_container container-display",
+                                ),
+                                dcc.Interval(
+                                    # id="dailyupdate", interval=1000 * 1 * 60 * 60 * 6, n_intervals=0
+                                    id="dbupdate",
+                                    interval=1000 * 1 * 60 * 60 * 8,
+                                    n_intervals=0,
+                                ),
                             ],
                         ),
                         # Important Info Row1
@@ -419,10 +436,17 @@ app.layout = html.Div(
 # ====================
 # Callbacks
 # ====================
+# db update
+@app.callback(Output("lastupdate", "children"), [Input("dbupdate", "n_intervals")])
+def lastupdate(n):
+    print(n)
+    return html.H5("Last Update: " + dbupdate.dbupdate())
+
+
 # Date update
 @app.callback(Output("date", "children"), [Input("dateupdate", "n_intervals")])
 def date_update(n):
-    date = "Last Updated " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     return html.H5(date)
 
 
@@ -486,9 +510,9 @@ def info_update(region, n):
     )
 
 
-# Map and prgraph hour update
+# Map and prgraph daily update
 @app.callback(
-    [Output("mapgraph", "figure"), Output("prgraph", "figure")],
+    [Output("mapgraph", "figure"), Output("prgraph", "figure"),],
     [Input("dailyupdate", "n_intervals")],
 )
 def daily_update(n):
