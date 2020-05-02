@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import sqlite3
 import time
+import schedule
 
 # Set database path
 currentpath = os.path.abspath(os.path.dirname(__file__))
@@ -11,7 +12,7 @@ db = "COVID19.db"
 path = os.path.abspath(os.path.join(currentpath, "..", folder, db))
 
 
-def dbupdate():
+def job():
     # Read csv file from url
     df = pd.read_csv("https://health-infobase.canada.ca/src/data/covidLive/covid19.csv")
 
@@ -23,4 +24,4 @@ def dbupdate():
     print("Database update has completed: ", now)
 
 
-dbupdate()
+schedule.every(2).minutes.do(job)
