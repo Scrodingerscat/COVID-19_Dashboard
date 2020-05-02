@@ -12,7 +12,6 @@ import plotly.graph_objects as go
 from newsapi.newsapi_client import NewsApiClient
 import json
 from dotenv import load_dotenv
-import dbupdate
 
 # app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 app = dash.Dash(__name__)
@@ -288,15 +287,21 @@ app.layout = html.Div(
                             className="row flex-display",
                             children=[
                                 html.Div(
-                                    [html.H5(id="lastupdate")],
+                                    # [html.H5(id="lastupdate")],
+                                    [
+                                        html.H5(
+                                            "Last Update: "
+                                            + time.strftime("%Y-%m-%d", time.localtime())
+                                        )
+                                    ],
                                     className="mini_container container-display",
                                 ),
-                                dcc.Interval(
-                                    # id="dailyupdate", interval=1000 * 1 * 60 * 60 * 6, n_intervals=0
-                                    id="dbupdate",
-                                    interval=1000 * 1 * 60 * 60 * 8,
-                                    n_intervals=0,
-                                ),
+                                # dcc.Interval(
+                                #     # id="dailyupdate", interval=1000 * 1 * 60 * 60 * 6, n_intervals=0
+                                #     id="dbupdate",
+                                #     interval=1000 * 1 * 60 * 60 * 8,
+                                #     n_intervals=0,
+                                # ),
                             ],
                         ),
                         # Important Info Row1
@@ -437,10 +442,10 @@ app.layout = html.Div(
 # Callbacks
 # ====================
 # db update
-@app.callback(Output("lastupdate", "children"), [Input("dbupdate", "n_intervals")])
-def lastupdate(n):
-    print(n)
-    return html.H5("Last Update: " + dbupdate.dbupdate())
+# @app.callback(Output("lastupdate", "children"), [Input("dbupdate", "n_intervals")])
+# def lastupdate(n):
+#     print(n)
+#     return html.H5("Last Update: " + dbupdate.dbupdate())
 
 
 # Date update
