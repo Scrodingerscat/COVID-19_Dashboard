@@ -24,9 +24,8 @@ def job():
     print("Database update has completed: ", now)
 
 
-schedule.every(3).minutes.do(job)
+schedule.every(8).hours.do(job)
 
 while True:
     schedule.run_pending()
     time.sleep(1)  # wait one minute
-
