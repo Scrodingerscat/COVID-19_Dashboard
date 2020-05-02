@@ -111,7 +111,6 @@ def prgraph():
                 "paper_bgcolor": bgcolor,
                 # "height": 344,
                 "yaxis": {"showgrid": False},
-                "title": {"text": "Total Cases by Province and Territory"},
             },
             # "paper_bgcolor": bgcolor
             # "margin": {"r": 0, "t": 0, "l": 0, "b": 0},
@@ -354,7 +353,11 @@ app.layout = html.Div(
                     className="eight columns",
                     children=[
                         html.Div(
-                            className="pretty_container", children=[dcc.Graph(id="prgraph"),],
+                            className="pretty_container",
+                            children=[
+                                html.H5("Total Cases by Province and Territory"),
+                                dcc.Graph(id="prgraph"),
+                            ],
                         ),
                     ],
                 ),

@@ -22,3 +22,6 @@ def dbupdate():
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     print("Database update has completed: ", now)
     return now
+
+
+dbupdate()
