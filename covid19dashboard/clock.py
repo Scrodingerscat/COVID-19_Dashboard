@@ -8,11 +8,19 @@ import worker
 
 sched = BlockingScheduler()
 
+tz = "America/Toronto"
 
-@sched.scheduled_job("interval", minutes=3)
-def timed_job():
-    print("This job is run every three minutes.")
+
+@sched.scheduled_job("cron", hour=11, minute=30, timezone=tz)
+def morning():
     worker.job()
+    print("data update at 11:30am.")
+
+
+@sched.scheduled_job("cron", hour=19, minute=30, timezone=tz)
+def afternoon():
+    worker.job()
+    print("data update at 19:30pm.")
 
 
 sched.start()
