@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import sqlite3
 import time
-import schedule
 
 # Set database path
 currentpath = os.path.abspath(os.path.dirname(__file__))
@@ -24,8 +23,4 @@ def job():
     print("Database update has completed: ", now)
 
 
-# schedule.every(8).hours.do(job)
-
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)  # wait one minute
+# job()

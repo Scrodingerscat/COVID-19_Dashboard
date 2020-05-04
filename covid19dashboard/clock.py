@@ -4,7 +4,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 # import os.path
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), "."))
-import worker
+import dbupdate as db
 
 sched = BlockingScheduler()
 
@@ -13,13 +13,13 @@ tz = "America/Toronto"
 
 @sched.scheduled_job("cron", hour=11, minute=30, timezone=tz)
 def morning():
-    worker.job()
+    db.job()
     print("data update at 11:30am.")
 
 
 @sched.scheduled_job("cron", hour=19, minute=30, timezone=tz)
 def afternoon():
-    worker.job()
+    db.job()
     print("data update at 19:30pm.")
 
 

@@ -6,209 +6,18 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import time
 import pandas as pd
-import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
+import component as cp
 from newsapi.newsapi_client import NewsApiClient
-import json
 from dotenv import load_dotenv
 
-# app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 app = dash.Dash(__name__)
 server = app.server
 
 # ====================
-# Set path
-# ====================
-currentpath = os.path.abspath(os.path.dirname(__file__))
-jsonfolder = "docs"
-jsonfile = "canada.json"
-jsonpath = os.path.abspath(os.path.join(currentpath, "..", jsonfolder, jsonfile))
-
-# ====================
-# Data prepare
-# ====================
-# Get data from the database
-dbfolder = "data"
-dbfile = "COVID19.db"
-dbpath = os.path.abspath(os.path.join(currentpath, "..", dbfolder, dbfile))
-
-
-def get_data(query):
-    conn = sqlite3.connect(dbpath, check_same_thread=False)
-    df = pd.read_sql(query, con=conn)
-    conn.close()
-    if "date" in df.columns:
-        df.date = pd.to_datetime(df.date, format="%d-%m-%Y")
-
-    return df
-
-
-# Province list and shrtname dictionary
-query = """SELECT DISTINCT prname FROM 'covid' WHERE pruid!=99;"""
-prdf = get_data(query).prname
-
-dicprlist = {
-    "Newfoundland and Labrador": "NL",
-    "Prince Edward Island": "PE",
-    "Nova Scotia": "NS",
-    "New Brunswick": "NB",
-    "Quebec": "QC",
-    "Ontario": "ON",
-    "Manitoba": "MB",
-    "Saskatchewan": "SK",
-    "Alberta": "AB",
-    "British Columbia": "BC",
-    "Yukon": "YT",
-    "Northwest Territories": "NT",
-    "Nunavut": "NU",
-}
-
-# ====================
-# Component prebuild
-# ====================
-# Calendar build
-# calendar = dcc.DatePickerSingle(
-#     id="datepicker",
-#     min_date_allowed=dt(2019, 1, 1),
-#     max_date_allowed=dt.today(),
-#     date=str(dt.today()),
-# )
-
-# color, style, etc
-bgcolor = "#f9f9f9"
-deathcolor = "#fb6a4a"
-confcolor = "#2171b5"
-testcolor = "#238b45"
-
-# Cases by province graph
-def prgraph():
-    query = """SELECT prname, date, numtotal FROM 'covid';"""
-    df = get_data(query)
-    df = df.drop_duplicates("prname", keep="last")[
-        (df.prname != "Repatriated travellers") & (df.prname != "Canada")
-    ]
-    df = df.sort_values(by=["numtotal"], ascending=False)
-
-    x = []
-    for i in df.prname:
-        x.append(dicprlist[i])
-
-    fig = dict(
-        {
-            "data": [
-                {
-                    "type": "bar",
-                    "x": x,
-                    "y": df.numtotal,
-                    "text": df.numtotal,
-                    "textposition": "auto",
-                }
-            ],
-            "layout": {
-                "margin": {"r": 30, "t": 30, "l": 30, "b": 30},
-                "plot_bgcolor": bgcolor,
-                "paper_bgcolor": bgcolor,
-                # "height": 344,
-                "yaxis": {"showgrid": False},
-            },
-            # "paper_bgcolor": bgcolor
-            # "margin": {"r": 0, "t": 0, "l": 0, "b": 0},
-        }
-    )
-
-    return fig
-
-
-# Tabs graph
-def tabsgraph(mode, region):
-    # Conditions
-    if mode == "newtotal":
-        gtype = "bar"
-        text = "New Reported Cases in " + region
-        color = confcolor
-    elif mode == "newdeaths":
-        gtype = "bar"
-        text = "New Reported Deaths in " + region
-        color = deathcolor
-    elif mode == "numtotal":
-        gtype = "line"
-        text = "Cumulative Cases in " + region
-        color = confcolor
-    elif mode == "numdeaths":
-        gtype = "line"
-        text = "Cumulative Deaths in " + region
-        color = deathcolor
-    elif mode == "newtested":
-        gtype = "bar"
-        text = "Daily Tested number in " + region
-        color = testcolor
-    elif mode == "numtested":
-        gtype = "line"
-        text = "Total Tested number in " + region
-        color = testcolor
-
-    # Prepare data
-    query = """SELECT date, numtotal, numdeaths, numtested FROM 'covid' WHERE prname='{}';""".format(
-        region
-    )
-    df1 = get_data(query)
-    df2 = (
-        df1[["numtotal", "numdeaths", "numtested"]]
-        .diff()
-        .rename(
-            columns={"numdeaths": "newdeaths", "numtotal": "newtotal", "numtested": "newtested"}
-        )
-    )
-    df = pd.concat([df1, df2], axis=1)
-
-    # Create fig
-    fig = dict(
-        {
-            "data": [{"type": gtype, "x": df["date"], "y": df[mode], "marker": {"color": color}}],
-            "layout": {
-                "title": {"text": text},
-                "height": 280,
-                "margin": {"r": 50, "t": 50, "l": 50, "b": 50},
-            },
-        }
-    )
-
-    return fig
-
-
-# Map figure
-def mapfig():
-
-    with open(jsonpath, "r") as response:
-        geojson = json.load(response)
-
-    query = """SELECT prname, numtotal FROM 'covid' WHERE pruid!=1 AND pruid!=99;"""
-    df = get_data(query)
-    df = df.drop_duplicates("prname", keep="last")
-
-    fig = px.choropleth_mapbox(
-        df,
-        geojson=geojson,
-        color="numtotal",
-        locations="prname",
-        featureidkey="properties.name",
-        center={"lat": 63.070750, "lon": -94.386280},
-        mapbox_style="carto-positron",
-        zoom=2.5,
-        color_continuous_scale=px.colors.sequential.Blues,
-        labels={"numtotal": "Total Cases", "prname": "Province"},
-        height=600,
-    )
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0},)
-
-    return fig
-
-
-# ====================
 # Html layout
 # ====================
-# Layout build
 app.layout = html.Div(
     children=[
         # Header
@@ -273,7 +82,7 @@ app.layout = html.Div(
                                 html.H6("Select Region", className="control_label"),
                                 dcc.Dropdown(
                                     id="dropdown",
-                                    options=[{"label": i, "value": i} for i in prdf],
+                                    options=[{"label": i, "value": i} for i in cp.prdf],
                                     value="Canada",
                                     clearable=False,
                                 ),
@@ -295,12 +104,6 @@ app.layout = html.Div(
                                     ],
                                     className="mini_container container-display",
                                 ),
-                                # dcc.Interval(
-                                #     # id="dailyupdate", interval=1000 * 1 * 60 * 60 * 6, n_intervals=0
-                                #     id="dbupdate",
-                                #     interval=1000 * 1 * 60 * 60 * 8,
-                                #     n_intervals=0,
-                                # ),
                             ],
                         ),
                         # Important Info Row1
@@ -472,12 +275,12 @@ def date_update(n):
 )
 def tabs_update(region, n):
     return (
-        tabsgraph("newtotal", region),
-        tabsgraph("numtotal", region),
-        tabsgraph("newdeaths", region),
-        tabsgraph("numdeaths", region),
-        tabsgraph("newtested", region),
-        tabsgraph("numtested", region),
+        cp.tabs_fig("newtotal", region),
+        cp.tabs_fig("numtotal", region),
+        cp.tabs_fig("newdeaths", region),
+        cp.tabs_fig("numdeaths", region),
+        cp.tabs_fig("newtested", region),
+        cp.tabs_fig("numtested", region),
     )
 
 
@@ -497,7 +300,7 @@ def info_update(region, n):
     query = """SELECT date, numtotal, numdeaths, numtested FROM 'covid' WHERE prname='{}';""".format(
         region
     )
-    df1 = get_data(query)
+    df1 = cp.get_data(query)
     df2 = (
         df1[["numtotal", "numdeaths", "numtested"]]
         .diff()
@@ -524,7 +327,7 @@ def info_update(region, n):
     [Input("dailyupdate", "n_intervals")],
 )
 def daily_update(n):
-    return (mapfig(), prgraph())
+    return (cp.map_fig(), cp.pr_fig())
 
 
 # News update
