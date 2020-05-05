@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 # import sys
@@ -8,19 +9,11 @@ import dbupdate as db
 
 sched = BlockingScheduler()
 
-tz = "America/Toronto"
 
-
-@sched.scheduled_job("cron", hour=11, minute=30, timezone=tz)
+@sched.scheduled_job("interval", hour=2)
 def morning():
     db.job()
-    print("data update at 11:30am.")
-
-
-@sched.scheduled_job("cron", hour=19, minute=30, timezone=tz)
-def afternoon():
-    db.job()
-    print("data update at 19:30pm.")
+    print("This job will done every 2 hours")
 
 
 sched.start()

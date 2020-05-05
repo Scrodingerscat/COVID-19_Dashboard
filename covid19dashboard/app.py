@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 import component as cp
 from newsapi.newsapi_client import NewsApiClient
 from dotenv import load_dotenv
+import dbupdate as db
 
 app = dash.Dash(__name__)
 server = app.server
@@ -102,10 +103,12 @@ app.layout = html.Div(
                                 html.Div(
                                     # [html.H5(id="lastupdate")],
                                     [
-                                        html.H5(
-                                            "Last Update: "
-                                            + time.strftime("%Y-%m-%d", time.localtime())
-                                        )
+                                        dcc.Interval(
+                                            id="dbupdate",
+                                            interval=1 * 1000 * 60 * 60,
+                                            n_intervals=0,
+                                        ),
+                                        html.H5(id="lastupdate"),
                                     ],
                                     className="mini_container container-display",
                                 ),
@@ -252,11 +255,12 @@ app.layout = html.Div(
 # ====================
 # Callbacks
 # ====================
-# db update
-# @app.callback(Output("lastupdate", "children"), [Input("dbupdate", "n_intervals")])
-# def lastupdate(n):
-#     print(n)
-#     return html.H5("Last Update: " + dbupdate.dbupdate())
+# ddtabase update
+@app.callback(Output("lastupdate", "children"), [Input("dbupdate", "n_intervals")])
+def lastupdate(n):
+    db.job()
+    now = time.strftime("%Y-%m-%d", time.localtime())
+    return ["Last Update: " + now]
 
 
 # Date update
