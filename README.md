@@ -44,4 +44,4 @@ Run `covid19dashboard/app.py` on your local machine and visit http://127.0.0.1:8
 
 ## License
 
-[MIT © Wayne Yin.](../LICENSE)
+[MIT © Wayne Yin.](/LICENSE)
