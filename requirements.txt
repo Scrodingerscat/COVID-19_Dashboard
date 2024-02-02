@@ -1,5 +1,5 @@
 plotly==4.6.0
-dash==1.11.0
+dash==2.15.0
 APScheduler==3.6.3
 dash_html_components==1.0.3
 pandas==1.0.3
